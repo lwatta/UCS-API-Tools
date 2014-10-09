@@ -35,10 +35,9 @@ else:
 	output = open(args.outputfile, 'w')
 
 if not args.inputfile:
-	print "no inputfile"
 	sys.exit(0)
 # open pairs file and start creating commands
-output.write("--------------------   Disable Service ---------------------------")
+output.write("--------------------   Disable Service ---------------------------\n")
 for templine in open (args.inputfile).readlines():
 	temp = templine.split()
 	source = temp[0]
@@ -46,11 +45,11 @@ for templine in open (args.inputfile).readlines():
 
 # parse through file and create nova command to disable on column1
 	outputlist = "nova service-disable --reason \"Down for OVS\/Kernel Upgrade\" " +source +" nova-compute\n"
-	print outputlist
+#	print outputlist
 	output.write(outputlist)
 
 # parse through file an create live migration command column1 to column2
-output.write("--------------------   Live Migration  ---------------------------")
+output.write("--------------------   Live Migration  ---------------------------\n")
 for templine in open (args.inputfile).readlines():
 	temp = templine.split()
 	source = temp[0]
@@ -62,23 +61,43 @@ for templine in open (args.inputfile).readlines():
 		target = temp[1]
 		outputlist = "nova list --all-tenants --host=" +source +" |depipe | grep -v ID | grep ACTIVE |awk \'{print \"nova live-migration \"$1\" " +target +"\"\\' \n"
 
-	print outputlist
+#	print outputlist
 	output.write(outputlist)
 	
 
-
-# parse through file and create nova command to enable on column1
-output.write("--------------------   Enable Service ---------------------------")
+# Create Ansible commands
+output.write("--------------------   Ansible Commands for Kernel ---------------------------\n")
 for templine in open (args.inputfile).readlines():
-	temp = templine.split()
-	source = temp[0]
+        temp = templine.split()
+        source = temp[0]
 
 # parse through file and create nova command to disable on column1
-	outputlist = "nova service-enable " +source +" nova-compute\n"
-	print outputlist
-	output.write(outputlist)
-	
+        outputlist = "ansible-playbook upgrade_ovs_and_kernel.yml -e \'target=" +source +"*\'\n"
+#       print outputlist
+        output.write(outputlist)
 
+	
+# Create Ansible Verification commands
+output.write("--------------------   Ansible Commands for Verification ---------------------------\n")
+for templine in open (args.inputfile).readlines():
+        temp = templine.split()
+        source = temp[0]
+
+# parse through file and create nova command to disable on column1
+        outputlist = "ansible " +source +" -m shell -a \'uname -a; modinfo openvswitch \' \n"
+#       print outputlist
+        output.write(outputlist)
+
+# parse through file and create nova command to enable on column1
+output.write("--------------------   Enable Service ---------------------------\n")
+for templine in open (args.inputfile).readlines():
+        temp = templine.split()
+        source = temp[0]
+
+# parse through file and create nova command to disable on column1
+        outputlist = "nova service-enable " +source +" nova-compute\n"
+#       print outputlist
+        output.write(outputlist)
 
 
 #for item in listoflists:
