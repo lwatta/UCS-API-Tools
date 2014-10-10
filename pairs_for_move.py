@@ -84,7 +84,7 @@ for templine in open (args.inputfile).readlines():
         source = temp[0]
 
 # parse through file and create nova command to disable on column1
-        outputlist = "ansible " +source +" -m shell -a \'uname -a; modinfo openvswitch \' \n"
+        outputlist = "ansible " +source +"* -m shell -a \'uname -a; modinfo openvswitch\' \n"
 #       print outputlist
         output.write(outputlist)
 
