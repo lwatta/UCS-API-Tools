@@ -13,20 +13,16 @@ from collections import defaultdict
 
 parser = argparse.ArgumentParser(description='Script to make sure Nova and Net SPs are associated to an updating template')
 parser.add_argument('-u', dest='hostname', action='store',
-                    help='Hostname')
+                    help='UCSM Hostname or IP')
 parser.add_argument('-p', dest='password', action='store',
-                    help='Admin Password')
-parser.add_argument('-a', dest='adaptprofile', action='store',
-                    help='Adapter Profile Name')
+                    help='Admin Password for UCSM')
+parser.add_argument('-a', dest='adaptprofile', action='store', default='TX_RX_OffLoadOff',
+                    help='Adapter Profile Name. Default is TX_RX_OffLoadOff')
 parser.add_argument('-l', dest='givemelist', action='store_true',
                     help='Give me a list of all the adapters')
 
 
 args = parser.parse_args()
-
-if not args.adaptprofile:
-#        args.adaptprofile = 'TX_RX_OffLoadOff'
-        args.adaptprofile = 'linux-8rxtx-noff'
 
 if args.givemelist:
 	print "Here is a lit of all adapterprofiles"
