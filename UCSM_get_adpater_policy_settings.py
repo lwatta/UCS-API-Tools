@@ -18,6 +18,8 @@ parser.add_argument('-p', dest='password', action='store',
                     help='Admin Password')
 parser.add_argument('-a', dest='adaptprofile', action='store',
                     help='Adapter Profile Name')
+parser.add_argument('-l', dest='givemelist', action='store_true',
+                    help='Give me a list of all the adapters')
 
 
 args = parser.parse_args()
@@ -25,24 +27,18 @@ args = parser.parse_args()
 if not args.adaptprofile:
 #        args.adaptprofile = 'TX_RX_OffLoadOff'
         args.adaptprofile = 'linux-8rxtx-noff'
-        print "didn't give us a profile to look for so assume it's a %s" % args.adaptprofile
 
-sys.exit
+if args.givemelist:
+	print "Here is a lit of all adapterprofiles"
 
 # Login first
 handle = UcsHandle()
 handle.Login(args.hostname, "admin", args.password)
 getRsp = handle.GetManagedObject(None, OrgOrg.ClassId(),{OrgOrg.DN: "org-root"})[0]
-#print "getRsp ---- "
-#print getRsp
-#print "getRsp ---- "
 adapters = handle.GetManagedObject(None, AdaptorHostEthIfProfile.ClassId(), inHierarchical=False,)
-#print adapters
+
 for adapter in adapters:
-	if adapter.Name == 'linux-8rxtx-noff':
-#		print "adapter ----"
-#		print adapter
-#		print "adapter --- "
+	if (not args.givemelist and adapter.Name == args.adaptprofile):
 		childs = handle.GetManagedObject(None, AdaptorHostEthIfProfile.ClassId(), {AdaptorHostEthIfProfile.DN: adapter.Dn} , inHierarchical=True)
 		print adapter.Dn
 		for child in childs:
@@ -63,6 +59,8 @@ for adapter in adapters:
 				print "RSS -------------------------> %s -------------> should be enabled" % child.ReceiveSideScaling
 			elif child.Rn == "eth-int":
 				print "Interrupts ------------------> %s --------> should be 18" % child.Count
+	elif args.givemelist:
+		print adapter.Name
 #
 #
 # Now want to create an adapter profile
