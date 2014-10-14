@@ -29,6 +29,8 @@ parser.add_argument('-u', dest='hostname', action='store',
                     help='Hostname')
 parser.add_argument('-p', dest='password', action='store',
                     help='Admin Password')
+parser.add_argument('-l', dest='givemelist', action='store_true',
+                    help='List all Profiles')
 
 
 args = parser.parse_args()
@@ -37,12 +39,12 @@ def ucs_get_vnictemplate(handle, server):
         childs = handle.ConfigResolveChildren(VnicEther.ClassId(), server.Dn, None, YesOrNo.TRUE)
         for child in childs.OutConfigs.GetChild():
 # we are looking for Vnic2 if Nova and Vnic2 and Vnic3 if Net
-                if ('vnic1' in child.Name.lower() and ('nova' in server.Name.lower() or 'net' in server.Name.lower())):
+                if ('vnic2' in child.Name.lower() and ('nova' in server.Name.lower() or 'net' in server.Name.lower())):
                         if not child.OperNwTemplName:
                                 print "\t NIC %s \tNo Template " % child.Name
                         else:
                                 print "\t NIC %s \tTemplate %s" % (child.Name, child.OperNwTemplName)
-                elif ( ('vnic1' in child.Name.lower() or 'vnic2' in child.Name.lower()) and 'net' in server.Name.lower() ):
+                elif ( ('vnic2' in child.Name.lower() or 'vnic3' in child.Name.lower()) and 'net' in server.Name.lower() ):
                         if not child.OperNwTemplName:
                                 print "\t NIC %s \tNo Template" % child.Name
                         else:
@@ -72,8 +74,10 @@ print "end templates"
 for server in servers:
 # Only want to check SPs that are instance type ie not Templates
 	if server.Type == 'instance':
+		if (args.givemelist):
+			print server.Name
 # check to see if associated don't really care if its not
-		if (server.AssocState == 'associated' and server.OperSrcTemplName != ''):
+		elif (server.AssocState == 'associated' and server.OperSrcTemplName != ''):
 #		print "got a real instance. Now check to see if nova or net"
 #			print server.Dn
 			if "nova" in server.Dn.lower():
