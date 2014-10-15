@@ -37,7 +37,7 @@ from collections import defaultdict
 
 # get login arguments
 parser = argparse.ArgumentParser(description='Checks to see if SP has pending reboot and if so it reboots it. Also trys to match \
-		the nova name with the sp name by searching for nova#-XXX in name of the template. If it can't find it exits.')
+		the nova name with the sp name by searching for nova#-XXX in name of the template. ')
 parser.add_argument('-u', dest='ucshostname', action='store',
                     help='UCS Hostname')
 parser.add_argument('-p', dest='password', action='store',
