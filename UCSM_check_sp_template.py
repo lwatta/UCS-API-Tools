@@ -32,6 +32,13 @@ parser.add_argument('-p', dest='password', action='store',
 parser.add_argument('-l', dest='givemelist', action='store_true',
                     help='List all Profiles')
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
 
 args = parser.parse_args()
 #print(args.hostname)
@@ -41,15 +48,25 @@ def ucs_get_vnictemplate(handle, server):
 # we are looking for Vnic2 if Nova and Vnic2 and Vnic3 if Net
                 if ('vnic2' in child.Name.lower() and ('nova' in server.Name.lower() or 'net' in server.Name.lower())):
                         if not child.OperNwTemplName:
-                                print "\t NIC %s \tNo Template " % child.Name
+                                print bcolors.FAIL + "\t NIC %s \tNo Template " % child.Name + bcolors.ENDC
+				print "\t\tAdapterProfile %s" % child.AdaptorProfileName
                         else:
                                 print "\t NIC %s \tTemplate %s" % (child.Name, child.OperNwTemplName)
+				print "\t\tAdapterProfile %s" % child.AdaptorProfileName
                 elif ( ('vnic2' in child.Name.lower() or 'vnic3' in child.Name.lower()) and 'net' in server.Name.lower() ):
                         if not child.OperNwTemplName:
-                                print "\t NIC %s \tNo Template" % child.Name
+                                print bcolors.FAIL + "\t NIC %s \tNo Template" % child.Name + bcolors.ENDC
+				print "\t\tAdapterProfile %s" % child.AdaptorProfileName
                         else:
                                 print "\t NIC %s \tTemplate %s" % (child.Name, child.OperNwTemplName)
+				print "\t\tAdapterProfile %s" % child.AdaptorProfileName
 
+def ucs_get_vnic_profile_pending(handle, child):
+	if child.AdaptorProfileName == 'TX_RX_OffloadOff':
+		print "AdapterProfile is correctly set"
+	else:
+		print "AdapterProfile is not yet set to TX_RX_OffloadOff"
+		print "This is not a problem yet"
 
 
 # Login first
@@ -82,29 +99,47 @@ for server in servers:
 #			print server.Dn
 			if "nova" in server.Dn.lower():
 				if 'initial' in template[server.OperSrcTemplName]:
-					 print "SP -> {0:24} Template -> {1:40} Updating -> NO!!!!".format(server.Name,server.OperSrcTemplName)
+					 print "SP -> %s" % server.Name
+					 print "\t Template -> %s" % server.OperSrcTemplName 
+					 print bcolors.FAIL + "\t\t Updating -> NO!!!!" + bcolors.ENDC
 				else:
 					if server.MaintPolicyName == '':
-						print "SP -> {0:24} Template -> {1:40} Updating -> Yes \tMaintence Policy -> NO!!!".format(server.Name, server.OperSrcTemplName)
+						print "SP -> %s" % server.Name
+						print "\t Template -> %s" % server.OperSrcTemplName 
+						print "\t\t Updating -> Yes"
+						print bcolors.FAIL + "\t\t\tMaintence Policy -> NO!!!" + bcolors.ENDC
 					else:
-						print "SP -> {0:24} Template -> {1:40} Updating -> Yes \tMaintence Policy -> {2}".format(server.Name, server.OperSrcTemplName,server.MaintPolicyName)
+						print "SP -> %s" % server.Name
+						print "\t Template -> %s" % server.OperSrcTemplName 
+						print "\t\t Updating -> Yes"
+						print "\t\t\tMaintence Policy -> %s" % server.MaintPolicyName
+
 				ucs_get_vnictemplate(handle,server)
 
 			elif "net" in server.Dn.lower():
 				if 'initial' in template[server.OperSrcTemplName]:
-					print "SP -> {0:24}  Template -> {1:40} Updating -> NO!!!!".format(server.Name, server.OperSrcTemplName)
+					print "SP -> %s " % server.Name
+					print "\tTemplate -> %s"  % server.OperSrcTemplName
+					print bcolors.FAIL + "\t\tUpdating -> NO!!!!" + bcolors.ENDC
 				else:
 					if server.MaintPolicyName == '':
-						print "SP -> {0:24} Template -> {1:40} Updating -> Yes \tMaintence Policy -> NO!!!".format(server.Name, server.OperSrcTemplName)
+						print "SP -> %s " % server.Name
+						print "\tTemplate -> %s"  % server.OperSrcTemplName
+						print "\t\tUpdating -> Yes"
+						print bcolors.FAIL + "\t\t\tMaintence Policy -> NO!!!" + bcolors.ENDC
 					else:
-						print "SP -> {0:24} Template -> {1:40} Updating -> Yes \tMaintence Policy -> {2} ".format(server.Name, server.OperSrcTemplName,server.MaintPolicyName)
+						print "SP -> %s " % server.Name
+						print "\tTemplate -> %s"  % server.OperSrcTemplName
+						print "\t\tUpdating -> Yes"
+						print "\t\t\tMaintence Policy -> %s" % server.MaintPolicyName
 		                ucs_get_vnictemplate(handle,server)
 
 
 
 		elif (server.AssocState == 'associated' and server.OperSrcTemplName == ''):
 			if ('nova' in server.Dn.lower() or 'net' in server.Dn.lower() ):
-                                print "SP -> {0:24} Template -> Not Assigned WARNING!!!! ".format(server.Name)
+                                print "SP -> %s" % server.Name 
+				print bcolors.FAIL + "\tTemplate -> Not Assigned WARNING!!!! " + bcolors.ENDC
 		                ucs_get_vnictemplate(handle,server)
 				
 
