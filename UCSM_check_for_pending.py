@@ -44,16 +44,17 @@ parser.add_argument('-p', dest='password', action='store',
                     help='Admin Password')
 parser.add_argument('-n', dest='hostname', action='store',
                     help='hostname to reset')
+parser.add_argument('-e', dest='exact', action='store_true',
+                    help='Do not try to match the hostname take exactly what is passed in')
 
 
 args = parser.parse_args()
 source = args.hostname
-temp = re.search("(nova.*)", source)
-nova_name = temp.group()
-print nova_name
-
-
-
+if not args.exact:
+	temp = re.search("(nova.*)", source)
+	nova_name = temp.group()
+else:
+	nova_name = source
 # Login first
 handle = UcsHandle()
 handle.Login(args.ucshostname, "admin", args.password)
@@ -89,7 +90,7 @@ if exact == 1:
 	if dnuse.OperState == "pending-reboot":
 		print "got pending-reboot so reboot"
 		print dnuse
-		handle.AddManagedObject(dnuse, "lsmaintAck", {"AdminState":"trigger-immediate", "Dn":dnuse.Dn, "Scheduler":"", "PolicyOwner":"local", "Descr":""}, True)
+#		handle.AddManagedObject(dnuse, "lsmaintAck", {"AdminState":"trigger-immediate", "Dn":dnuse.Dn, "Scheduler":"", "PolicyOwner":"local", "Descr":""}, True)
 elif duplicates ==1:
 	print "we got a single match so use that"
 	print "use newsource %s" % newsource
@@ -97,7 +98,7 @@ elif duplicates ==1:
 	if dnuse.OperState == "pending-reboot":
 		print "got pending-reboot so reboot"
 		print dnuse
-		handle.AddManagedObject(dnuse, "lsmaintAck", {"AdminState":"trigger-immediate", "Dn":dnuse.Dn, "Scheduler":"", "PolicyOwner":"local", "Descr":""}, True)
+#		handle.AddManagedObject(dnuse, "lsmaintAck", {"AdminState":"trigger-immediate", "Dn":dnuse.Dn, "Scheduler":"", "PolicyOwner":"local", "Descr":""}, True)
 elif duplicates > 1:
 	print "we got duplicates so we are fucked"
 	handle.Logout
