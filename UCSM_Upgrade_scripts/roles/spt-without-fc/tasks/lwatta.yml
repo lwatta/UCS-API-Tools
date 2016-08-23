@@ -1,0 +1,28 @@
+---
+#- include_vars: "firmware_policies.yml"
+
+- name: UCSM IP credentials
+  debug: var=ucsm_ip
+
+- name: UCSM user credentials
+  debug: var=ucsm_cred_user
+
+- name: UCSM pw credentials
+  debug: var=ucsm_cred_pw
+
+- name: MAC pool vars
+  debug: var=mac_pools
+
+- name: Firmware policy vars
+  debug: var=firmware_policies
+
+- name: Create UCS firmware policy
+  ucs_firmware_policy:
+    ucsm_ip={{ inventory_hostname }} ucsm_user=ucsm_cred_user ucsm_pw=ucsm_cred_pw
+    state={{ item.state }}
+    policy_name={{ item.policy_name }}
+    policy_desc={{ item.policy_desc }}
+    blade_bundle_version={{ item.blade_bundle_version }}
+    rack_bundle_version={{ item.rack_bundle_version }}
+  with_items: firmware_policies
+

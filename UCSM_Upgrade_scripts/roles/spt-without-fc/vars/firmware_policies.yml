@@ -1,0 +1,7 @@
+--- 
+firmware_policies: 
+  - policy_name: 'fw-225a'
+    policy_desc: 'firmware for 2.2.5a'
+    blade_bundle_version: '2.2(5a)B'
+    rack_bundle_version: '2.2.(5a)C'
+    state: 'present'

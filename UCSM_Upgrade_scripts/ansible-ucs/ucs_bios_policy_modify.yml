@@ -1,0 +1,14 @@
+---
+- name: Create nova node UCS Service Profile Template
+  hosts: ucs-sim
+  connection: local
+  gather_facts: no
+
+  roles:
+    - { role: spt-without-fc, ucsm_cred_user: 'admin', ucsm_cred_pw: 'sv11abPW',
+                       firmware_policies: [ { policy_name: "fw-225a",
+                                              policy_desc: "Firmware_for_225a",
+                                              blade_bundle_version: "2.2(5a)B",
+                                              rack_bundle_version: "2.2(5a)C",
+                                              state: "present" } ],
+      }

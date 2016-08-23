@@ -1,0 +1,33 @@
+---
+- name: UCS Server Reboot Pending playbook
+  hosts: "{{ target }}"
+  gather_facts: no
+  vars:
+    ucs_password: "notadmin"
+
+# dmidecode commands to get the UCS system and serviceprofile for
+#       resetting the SP for pending-reboot
+  tasks
+    - name: "DMIDECODE for UCSM system"
+      shell: dmidecode  | grep "String 4" | awk -F":" '{print $3}'
+      register: dmidecode_UCSM
+
+    - debug: var=dmidecode_UCSM.stdout_lines
+
+    - name: "DMIDECODE for UCSM Service Profile"
+      shell: dmidecode  | grep "String 2" | awk -F":" '{print $3}'
+      register: dmidecode_UCSM_SP
+
+    - debug: var=dmidecode_UCSM_SP.stdout_lines
+
+    - name: Shutdown server graceful
+      shell: shutdown -h now
+
+    - name: Sleep to allow time to go down
+      connection: local
+      shell: sleep 120
+
+    - name: UCSM_check_for_pending ... finding SP and rebooting it via SDK
+      connection: local
+      shell: /opt/cis/tools/utils/UCSM_check_for_pending.py -u "{{ dmidecode_UCSM.stdout }}" -p "{{ ucs_password }}" -n "{{ dmidecode_UCSM_SP.stdout }}" -e
+

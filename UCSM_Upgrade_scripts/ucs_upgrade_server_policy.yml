@@ -1,0 +1,18 @@
+---
+- name: Update UCS Service Profile Templates
+  hosts: "{{ target }}"
+  connection: local
+  gather_facts: no
+  vars:
+    ucs_password: "notadmin"
+
+# should run local since it defined as local
+  tasks:
+#  - name: Unbind Service Profiles from Templates
+#    shell: ./scripts/UCSM_unlink_template.py -i "{{ inventory_hostname }}" -p "{{ ucs_password }}" -a unlink
+
+  - name: Add new firmware policy to all Templates
+    shell: ./scripts/UCSM_upgrade_sp_templates.py -i "{{ inventory_hostname }}"   -p  "{{ ucs_password }}" -f Host-FW-2.2.5a 
+# Turn on smart call home
+  - name: Turn on Smart Call Home 
+    shell: ./scripts/UCSM_callhome_on-off.py -u "{{ inventory_hostname }}" -p "{{ ucs_password }}"  -a on

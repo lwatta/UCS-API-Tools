@@ -1,0 +1,15 @@
+---
+- name: UCS Infrastructure Pre-upgade playbook
+  hosts: "{{ target }}"
+  connection: local
+  gather_facts: no
+  vars:
+    ucs_password: "notadmin"
+
+# should run local since it defined as local
+  tasks:
+  - name: Kick off auto-install upgrade of subordinate FI
+    shell: ./scripts/UCS_infra_upgrade.pl "{{ inventory_hostname }}" admin "{{ ucs_password }}"
+
+#  - name: Acknowledge primary reboot
+#    shell: /Users/lwatta/Code/UCS-API-Tools/upgrades/UCS_infra_upgrade_ack_primary.pl "{{ inventory_hostname }}" admin "{{ ucs_password }}"

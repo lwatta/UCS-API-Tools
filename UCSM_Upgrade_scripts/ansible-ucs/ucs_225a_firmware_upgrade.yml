@@ -1,0 +1,16 @@
+---
+- hosts: ucs-sim
+  connection: local
+  gather_facts: no
+
+  tasks:
+  - name: Create UCS firmware policy
+    ucs_firmware_policy:
+       ucsm_ip: "{{ inventory_hostname }} "
+       ucsm_user: "admin" 
+       ucsm_pw: "sv11abPW"
+       state: "present"
+       policy_name: "fw-225a-1"
+       policy_desc: "Firmware_for_225a"
+       blade_bundle_version: "2.2(5a)B"
+       rack_bundle_version: "2.2(5a)C"

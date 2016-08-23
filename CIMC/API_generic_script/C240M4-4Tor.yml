@@ -1,0 +1,163 @@
+# C240M4-4Tor.yml
+# This yaml config is for a C240 where 4Tors are used.
+# 	This means all nics come from physical ports on the servers.
+#	The MLOM (adaptor-7)VIC is used for eth0 and eth1 for mgmt and ceph
+#	The VIC (adaptor-1)1225 is used for eth1 and eth3 for OVS
+#	This config should be used for BOM4.x sites with 4 TORs.
+#	For BOM 4 sites the default VLAN for Adapter-7 should not be set on the nic card
+#	Note: You will see eth0 and eth1 for different adaptors below. That is correct. When you have
+#		multiple adaptors each one will have an eth0 & eth1.
+# Add accounts
+# Things need to think about -
+#	need to set the CIMC hostname
+# Bios settings
+---
+  BiosVfIntelVTForDirectedIO:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Intel-VT-for-directed-IO"
+    VpIntelVTDCoherencySupport:  "enabled"
+    VpIntelVTForDirectedIO: "enabled"
+  BiosVfDirectCacheAccess:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Direct-Cache-Access"
+    VpDirectCacheAccess: "enabled"
+  BiosVfCPUPowerManagement:
+    Dn: "sys/rack-unit-1/bios/bios-settings/CPU-PowerManagement"
+    VpCPUPowerManagement: "custom"
+  BiosVfProcessorC6Report:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Processor-C6-Report"
+    VpProcessorC6Report: "disabled"
+  BiosVfProcessorC1E:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Processor-C1E"
+    VpProcessorC1E: "disabled"
+  BiosVfLOMPortOptionROM:
+    Dn: "sys/rack-unit-1/bios/bios-settings/LOMPort-OptionROM"
+    VpLOMPortsAllState: "Disabled"
+  BiosVfTPMSupport:
+    Dn: "sys/rack-unit-1/bios/bios-settings/TPM-Support"
+    VpTPMSupport: "enabled"
+  BiosVfPCIOptionROMs:
+    Dn: "sys/rack-unit-1/bios/bios-settings/PCI-OptionROMs"
+    VpPCIOptionROMs: "Enabled"
+  BiosVfPCISlotOptionROMEnable:
+    Dn: "sys/rack-unit-1/bios/bios-settings/PCI-Slot-OptionROM-Enable"
+    VpSlot2State: "Disabled"
+    VpSlot1State: "Disabled"
+    VpSlotN2State: "Disabled"
+    VpSlotN1State: "Enabled"
+    VpSlotHBAState: "Enabled"
+    VpSlotMLOMState: "Enabled"
+    VpSlot6State: "Disabled"
+    VpSlot5State: "Disabled"
+    VpSlot4State: "Disabled"
+    VpSlot3State: "Disabled"
+  BiosVfSataModeSelect:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Pch-Sata-Mode"
+    VpSataModeSelect: "Disabled"
+# Nic settings for eth0 and eth1
+...
+---
+  AdaptorHostEthif:
+    Dn: "sys/rack-unit-1/adaptor-7/host-eth-eth0"
+    PxeBoot: "enabled"
+  AdaptorEthGenProfile:
+    Dn: "sys/rack-unit-1/adaptor-7/host-eth-eth0/general"
+    VlanMode: "ACCESS"
+...
+---
+  AdaptorEthGenProfile:
+    Dn: "sys/rack-unit-1/adaptor-7/host-eth-eth1/general"
+    VlanMode: "ACCESS"
+# Now check the nic settings for OVS
+...
+---
+  AdaptorEthGenProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth0/general"
+    Vlan: "666"
+  AdaptorEthOffloadProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth0/eth-offload"
+    LargeReceive: "disabled"
+    TcpRxChecksum: "disabled"
+    TcpSegment: "disabled"
+    TcpTxChecksum: "disabled"
+  AdaptorEthRecvQueueProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth0/eth-rcv-q"
+    Count: "8"
+    RingSize: "1024"
+  AdaptorEthWorkQueueProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth0/eth-work-q"
+    Count: "8"
+    RingSize: "1024"
+  AdaptorEthInterruptProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth0/eth-int"
+    Count: "18"
+  AdaptorEthCompQueueProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth0/eth-comp-q"
+    Count: "16"
+...
+---
+  AdaptorEthGenProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth1/general"
+    Vlan: "666"
+  AdaptorEthOffloadProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth1/eth-offload"
+    LargeReceive: "disabled"
+    TcpRxChecksum: "disabled"
+    TcpSegment: "disabled"
+    TcpTxChecksum: "disabled"
+  AdaptorEthRecvQueueProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth1/eth-rcv-q"
+    Count: "8"
+    RingSize: "1024"
+  AdaptorEthWorkQueueProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth1/eth-work-q"
+    Count: "8"
+    RingSize: "1024"
+  AdaptorEthInterruptProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth1/eth-int"
+    Count: "18"
+  AdaptorEthCompQueueProfile:
+    Dn: "sys/rack-unit-1/adaptor-1/host-eth-eth1/eth-comp-q"
+# Boot Configuration
+  LsbootPxe:
+    Dn: "sys/rack-unit-1/boot-precision/pxe-pxe"
+    Name: "pxe"
+    Type: "PXE"
+    State: "Enabled"
+    Order: "1"
+  LsbootHdd:
+    Dn: "sys/rack-unit-1/boot-precision/hdd-localhd"
+    Name: "localhd"
+    Type: "LOCALHDD"
+    State: "Enabled"
+    Order: "2"
+# Syslog should always be the infra-002 node.
+  CommSyslogClient:
+    Dn: "sys/svc-ext/syslog/client-primary"
+    Hostname: "csx-a-logs-001"
+    AdminState: "enabled"
+# NTP Change this for NTP servers as needed
+  CommNtpProvider:
+    Dn: "sys/svc-ext/ntp-svc"
+    NtpServer1: "1.ntp.esl.cisco.com"
+    NtpServer2: "2.ntp.esl.cisco.com"
+    NtpEnable: "yes"
+# Power restore
+  BiosVfResumeOnACPowerLoss:
+    Dn: "sys/rack-unit-1/board/Resume-on-AC-power-loss"
+    VpResumeOnACPowerLoss: "reset"
+# DIMM black list
+  MemoryArray:
+    Dn: "sys/rack-unit-1/board/memarray-1"
+    DimmBlackList: "enable"
+# Enable SNMP
+  CommSnmp:
+    Dn: "sys/svc-ext/snmp-svc"
+    AdminState: "enabled"
+# Add DNS Assume Cisco sites and access to esl
+  MgmtIF:
+    Dn: "sys/rack-unit-1/mgmt/if-1"
+    DnsPreferred: "173.37.137.85"
+    DnsAlternate: "64.104.76.247"
+# Reboot this bad boy
+  ComputeRackUnit:
+    Dn: "sys/rack-unit-1"
+    AdminPower: "cycle-immediate"

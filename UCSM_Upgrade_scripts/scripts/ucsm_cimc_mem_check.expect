@@ -1,0 +1,830 @@
+#!/usr/bin/expect
+######################################################################################################
+# Tool Name - CIMC Memory Free Analyzer                                                              #                                   
+#                                                                                                    #
+# Tool Description - The script when executed on UCSM domain gets a list of all UCS-C series servers # 
+#                     and then connects to CIMC of each server to retrieve the Memory Free value,    #
+#                     Uptime and CIMC Version. It marks the status of the server as Critical if      #
+#                     Memory free Value is less than Memory free Threshold. Also, the tool gives     #
+#                     an option to users to perform Reset CIMC operations on the servers.            #                                                              
+#                                                                                                    #
+# Tool Vesrion - v3.0                                                                                #
+#                                                                                                    # 
+# Author - Vaibhav Kumar                                                                             #
+#                                                                                                    #
+# Release Date - 2/17/2015                                                                           #
+#                                                                                                    #
+# Contact - Cisco TAC                                                                                #
+#                                                                                                    # 
+# Copyright - © 2015 Cisco Systems, Inc. All rights Reserved                                         # 
+#                                                                                                    #
+#                                                                                                    #
+#  CHANGELOG                                                                                         #
+# -----------                                                                                        # 
+# -- Changelog v2.0 --                                                                               #
+# Add interactive session for User to Reset CIMC                                                     #
+# -- Changelog v1.2 --                                                                               #
+# Changed typecast from entier to int in order to make it work on older expect versions              #
+# -- Changelog v1.1 --                                                                               #
+# Added "terminal length 0" to handle large number of Servers                                        #
+#                                                                                                    # 
+#                                                                                                    # 
+#                                                                                                    # 
+#                                                                                                    # 
+######################################################################################################
+
+
+
+
+set cmdline $argv
+set UCS_CIMC_REPORT_DIR "reports"
+
+if {[llength $cmdline] == 0} {
+             puts -nonewline "UCSM IP: " 
+             flush stdout
+             gets stdin ucsm_ip
+#             while {![regexp {^((([2][5][0-5]|([2][0-4]|[1][0-9]|[0-9])?[0-9])\.){3})([2][5][0-5]|([2][0-4]|[1][0-9]|[0-9])?[0-9])$} $ucsm_ip]} {
+#               puts -nonewline "UCSM IP: " 
+#               flush stdout
+#               gets stdin ucsm_ip
+#             } 
+
+             puts -nonewline "UCSM Username: " 
+             flush stdout
+             gets stdin ucsm_user
+             while {![string is alnum -strict $ucsm_user]} {
+                puts -nonewline "UCSM Username: " 
+                flush stdout
+                gets stdin ucsm_user
+             }
+
+             exec stty -echo echonl <@stdin
+             puts -nonewline "UCSM Password: " 
+             flush stdout
+             gets stdin ucsm_pwd
+             exec stty echo -echonl <@stdin
+
+             puts -nonewline "Mem Free Threshold(in KB): " 
+             flush stdout
+             gets stdin u_mem_thresh
+             if {[string is integer -strict $u_mem_thresh]} {
+                  set mem_thresh $u_mem_thresh
+             } else {
+                  set mem_thresh 20000
+             }
+    
+
+             puts -nonewline "Input CSV File: " 
+             flush stdout
+             gets stdin u_if_file
+             if {[file isfile $u_if_file]} {
+                  set if_flag 1
+                  set if_file $u_if_file
+             } else {
+                  set if_flag 0
+                  puts "Final Report generated from the script will be used"
+             } 
+
+            
+             puts -nonewline "Do you want debug output?(y/n): " 
+             flush stdout
+             gets stdin d_resp
+
+             if {$d_resp eq "y"} {
+                set debug_opt on  
+                puts -nonewline "Output Debug File: " 
+                flush stdout
+                gets stdin of_file
+                if {$of_file eq ""} {
+                  puts "Debug output will be printed on Console"
+                }
+
+             } elseif {$d_resp eq "n"} {
+                  set debug_opt off 
+             }
+
+
+             puts -nonewline "Do you want Interactive Session in the end?(y/n): " 
+             flush stdout
+             gets stdin i_resp
+
+             if {$i_resp eq "y"} {
+                set interact_opt on  
+             } elseif {$i_resp eq "n"} {
+                  set interact_opt off 
+                  puts "Select Reset CIMC Option:\n \
+        \t1. Reset Critical Servers from the generated report\n \
+        \t2. Reset All Servers from the generated report\n \
+        \t3. Reset All Servers from the Input CSV file\n \
+       "
+                  puts -nonewline "Option\[1\/2\/3\]:" 
+                  flush stdout
+                  gets stdin reset_opt
+                  if { $reset_opt == 3 && $if_flag == 0 } {
+                     puts "Input File Incorrect. Exiting...\n"  
+                     exit 
+                  } elseif { $reset_opt != 1 && $reset_opt != 2 && $reset_opt != 3 } {
+                     puts "Incorrect Reset Option. Exiting...\n"  
+                     exit 
+                  }
+
+             }
+
+  flush stdout
+
+} elseif {[llength $argv] == 1 && [lindex $argv 0] == "-h"} {
+        puts " ---- CIMC Memory Check Tool ---- \n"
+        puts "Usage: ./ucsm_cimc_mem_check.expect -ip <UCSM IP> -u <UCSM_username> -p <UCSM_password> -m <Memory Free Threshold> -if <input CSV file> -d <output debug file> \[-i|-ni <option>\] \n"
+        puts "Description:\n"
+        puts "\t -ip -> {Mandatory} UCSM IP \n"
+        puts "\t -u -> {Mandatory} UCSM Username \n"
+        puts "\t -p -> {Mandatory} UCSM Password \n"
+        puts "\t -m -> {Optional} Memory Free Threshold in KB. If not mentioned default value of 20000 will be considered for memory free check\n"
+        puts "\t -if -> {Optional} Input CSV file from User in the same format as of Report. Here, User can modify a report to have his own set of Critical Servers\n"
+        puts "\t -d -> {Optional} To enable debug output. If mentioned with Output debug file, Debug Output will be captured in the file otherwise debug output will go on console\n"
+        puts "\t -i -> {Optional} To enter interactive session after Report Generation to intake User Option for Resetting CIMC\n"
+        puts "\t -ni -> {Optional} To give option for resetting CIMC at command line. The options are: \n\
+                                   \t\t 1 - Reset Critical Servers from the generated report \n\
+                                   \t\t 2 - Reset All Servers from the generated report \n\
+                                   \t\t 3 - Reset All Servers from the Input CSV file. To be used with '-if' option \n\
+
+             \n"
+        puts "Examples:\n"
+        puts "\t# ./ucsm_cimc_mem_check.expect \n\
+\t\tUCSM IP: 192.168.2.10 \n\
+\t\tUCSM Username: admin \n\
+\t\tUCSM Password: \n\
+\t\tMem Free Threshold(in KB): 30000 \n\
+\t\tInput CSV File: input_report.csv \n\
+\t\tDo you want debug output?(y/n): y \n\
+\t\tOutput Debug File: output_debug_report.txt \n\
+\n"
+        puts "\n\n\t# ./ucsm_cimc_mem_check.expect -ip 192.168.2.10 -u admin -p password -m 30000 -if input_report.csv -d output_debug_report.txt -ni 3"
+        puts "\n\n\t# ./ucsm_cimc_mem_check.expect -ip 192.168.2.10 -u admin -p password -d output_debug_report.txt -i"
+        puts "\n\n\t# ./ucsm_cimc_mem_check.expect -ip 192.168.2.10 -u admin -p password -d -i"
+        puts "\n\n\t# ./ucsm_cimc_mem_check.expect -ip 192.168.2.10 -u admin -p password -m 30000 -ni 1"
+        puts "\nNote: If mandatory Parameters are not mentioned in command line like password, they will be taken as user Input from console\n"
+        exit
+
+} elseif {[llength $argv] == 1 && [lindex $argv 0] == "-v"} {
+        puts "CIMC Memory Check Tool v3.0"
+        exit
+
+} else {
+    
+    set cmdline $argv
+    
+    if {[lsearch $cmdline "-ip"] >= 0} {
+        set ucsm_ip [lindex $cmdline [lsearch $cmdline "-ip"]+1] 
+        #while {![regexp {^((([2][5][0-5]|([2][0-4]|[1][0-9]|[0-9])?[0-9])\.){3})([2][5][0-5]|([2][0-4]|[1][0-9]|[0-9])?[0-9])$} $ucsm_ip]} {
+        #     puts -nonewline "UCSM IP: " 
+        #     flush stdout
+        #     gets stdin ucsm_ip
+        #   }
+    } elseif {[lsearch $cmdline "-ip"] < 0} {
+             puts -nonewline "UCSM IP: " 
+             flush stdout
+             gets stdin ucsm_ip
+             #while {![regexp {^((([2][5][0-5]|([2][0-4]|[1][0-9]|[0-9])?[0-9])\.){3})([2][5][0-5]|([2][0-4]|[1][0-9]|[0-9])?[0-9])$} $ucsm_ip]} {
+             #   puts -nonewline "UCSM IP: " 
+             #   flush stdout
+             #   gets stdin ucsm_ip
+             #}
+    }
+
+    if {[lsearch $cmdline "-u"] >= 0} {
+        set ucsm_user [lindex $cmdline [lsearch $cmdline "-u"]+1] 
+        while {![string is alnum -strict $ucsm_user]} {
+             puts -nonewline "UCSM Username: " 
+             flush stdout
+             gets stdin ucsm_user
+        }
+    } elseif {[lsearch $cmdline "-u"] < 0} {
+             puts -nonewline "UCSM Username: " 
+             flush stdout
+             gets stdin ucsm_user
+             while {![string is alnum -strict $ucsm_user]} {
+                puts -nonewline "UCSM Username: " 
+                flush stdout
+                gets stdin ucsm_user
+             }
+    }
+
+    if {[lsearch $cmdline "-p"] >= 0} {
+         set ucsm_pwd [lindex $cmdline [lsearch $cmdline "-p"]+1] 
+         if {[regexp {^-.*$} $ucsm_pwd] || $ucsm_pwd eq ""} {
+             exec stty -echo echonl <@stdin
+             puts -nonewline "UCSM Password: " 
+             flush stdout
+             gets stdin ucsm_pwd 
+             exec stty echo -echonl <@stdin
+         }
+    } elseif {[lsearch $cmdline "-p"] < 0} {
+             exec stty -echo echonl <@stdin
+             puts -nonewline "UCSM Password: " 
+             flush stdout
+             gets stdin ucsm_pwd 
+             exec stty echo -echonl <@stdin
+    } 
+    if {[lsearch $cmdline "-m"] >= 0} {
+         set mem_thresh [lindex $cmdline [lsearch $cmdline "-m"]+1] 
+         while {![string is integer -strict $mem_thresh]} {
+             puts -nonewline "Mem Free Threshold(in KB): " 
+             flush stdout
+             gets stdin u_mem_thresh
+             if {[string is integer -strict $u_mem_thresh]} {
+                  set mem_thresh $u_mem_thresh
+             } else {
+                  set mem_thresh 20000
+             }
+         }
+    } elseif {[lsearch $cmdline "-m"] < 0} {
+                  set mem_thresh 20000
+    }
+    if {[lsearch $cmdline "-if"] >= 0} {
+         set if_file [lindex $cmdline [lsearch $cmdline "-if"]+1] 
+         set if_flag 1
+         if {![file isfile $if_file]} {
+             puts "Input File does not exist. Exiting ..." 
+             exit
+            }
+    } elseif {[lsearch $cmdline "-if"] < 0} {
+              set if_flag 0
+    }
+     
+    if {[lsearch $cmdline "-d"] >= 0} {
+         set debug_opt on
+         set of_file [lindex $cmdline [lsearch $cmdline "-d"]+1] 
+         if {[regexp {^-.*$} $of_file] || $of_file eq ""} {
+              puts "Debug output will be printed on Console"
+              set of_file ""
+         } 
+    } else {
+         set debug_opt off
+    } 
+
+    set interact_opt ""
+
+    if {[lsearch $cmdline "-i"] >= 0} {
+         set interact_opt on
+    } elseif {[lsearch $cmdline "-ni"] >= 0} {
+         set interact_opt off
+         set reset_opt [lindex $cmdline [lsearch $cmdline "-ni"]+1] 
+         if { $reset_opt == 3 && $if_flag == 0 } {
+             puts "Input File not mentioned. Exiting...\n"  
+             exit 
+         } elseif { $reset_opt != 1 && $reset_opt != 2 && $reset_opt != 3 } {
+                     puts "Incorrect Reset Option. Exiting...\n"  
+                     exit 
+         }
+    } 
+
+}
+
+
+proc duration {int_time} {
+     set timeList [list]
+     foreach div {86400 3600 60 1} mod {0 24 60 60} name {day hr min sec} {
+         set n [expr {$int_time / $div}]
+         if {$mod > 0} {set n [expr {$n % $mod}]}
+         if {$n > 1} {
+             lappend timeList "$n ${name}s"
+         } elseif {$n == 1} {
+             lappend timeList "$n $name"
+         }
+     }
+     return [join $timeList]
+}
+
+
+set timeout 60
+
+if {$debug_opt eq on && $of_file ne ""} {
+    log_user 0
+    log_file -a -noappend $of_file
+} elseif {$debug_opt eq on && $of_file eq ""} {
+    log_user 1
+} elseif {$debug_opt eq off} {
+    log_user 0
+}
+
+set send_slow {1 .1}
+send_user -s "\nScript is Executing ..."
+
+set cmd_platform "show server inventory | grep UCSC-C | tr -s ' ' , | cut -d ',' -f 1,2"
+set sp_platform "show detail | grep 'Service Profile' | tr -s ' ' , | cut -d ',' -f 4"
+set fd [open tempo.csv w+]
+
+send_user -s "."
+
+spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+expect -re "(.*): $" {
+	send "$ucsm_pwd\r"
+	expect -re ".?(.*)# $" {
+                send "\r"
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "terminal length 0\r"
+                        expect -re ".?(.*)# $" {
+                            send -i $connection_id "$cmd_platform\r"
+                            expect -re ".?(.*)# $" {
+                                        puts $fd $expect_out(buffer)
+                                        close $fd
+                                        close -i $connection_id
+}
+}
+}}}
+
+send_user -s "."
+
+#if mac, use following command
+#exec sed -i "" -e "1d" -e "\$d" tempo.csv
+exec sed -e "1d" -e "\$d" tempo.csv
+
+set timestamp [timestamp -format "%m%d%Y%H%M%S"]
+set report_dir $UCS_CIMC_REPORT_DIR
+set report_file_name "[join "report $ucsm_ip $timestamp" "_"].csv"
+set report_file "$report_dir/$report_file_name"
+set fp [open $report_file w+]
+puts $fp "server_id,server_model,CIMC_version,service_profile,mem_free,uptime,status"
+
+
+set fd [open tempo.csv r]
+set file_data [read -nonewline $fd]
+close $fd
+
+set data [split $file_data "\n"]
+foreach line $data {
+   send_user -s "."
+   set line_arr [split $line ","]
+   set server_id [lindex $line_arr 0]
+   set server_model [lindex $line_arr 1]
+
+   set ret_status 0
+
+
+   spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+   expect -re "(.*): $" {
+	send "$ucsm_pwd\r"
+
+	expect -re ".?(.*)# $" {
+                send "\r"
+
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "scope server $server_id\r"
+
+                        expect -i $connection_id -re ".?(.*)# $" {
+                          send -i $connection_id "$sp_platform\r"
+
+                          expect -i $connection_id -re ".?(.*)# $" {
+		            set op_val [split $expect_out(buffer) "\r\n"]
+                            set service_profile [lindex $op_val 2]
+                            send -i $connection_id "connect cimc $server_id\r"
+
+                            expect -i $connection_id -re "(.*)]# $" {
+                                set ret_status 1 
+                                send -i $connection_id "memory\r"
+
+                                expect -i $connection_id -re "(.*)]# $" {
+					set output_list [split $expect_out(buffer) "\r\n"]
+                                        set i 6
+                                        set val [lindex $output_list $i]
+					set val_6 [regexp -inline -all -- {\S+} $val]
+                                        set i 1
+                                        set mem_free [lindex $val_6 $i]
+					set uptime_val [regexp -inline -all -- {\S+} [lindex $output_list end-2]]
+                                        set uptime_secs [expr int([lindex $uptime_val 0])]
+                                        set uptime [duration $uptime_secs]
+                                        send -i $connection_id "version\r"
+
+                                        expect -i $connection_id -re "(.*)]# $" {
+					   set op_version [split $expect_out(buffer) "\r\n"]
+					   set cimc_val [regexp -inline -all -- {\S+} [lindex $op_version 2]]
+					   set cimc_version [lindex $cimc_val 1]
+                                           close -i $connection_id
+                                          }
+                                        }
+
+				}
+                         if { $ret_status == 1 && $mem_free >= $mem_thresh} {
+                             set status "OK" 
+                             puts $fp "$server_id,$server_model,$cimc_version,$service_profile,$mem_free,$uptime,$status" 
+                         } elseif { $ret_status == 1 && $mem_free < $mem_thresh} {
+                             set status "Critical" 
+                             puts $fp "$server_id,$server_model,$cimc_version,$service_profile,$mem_free,$uptime,$status" 
+                         } elseif { $ret_status == 0 } {
+                             set status "Not reachable" 
+                             puts $fp "$server_id,$server_model,NA,$service_profile,NA,NA,$status" 
+                         }
+
+
+			}
+			
+                }
+	}
+}}}
+
+close $fp
+
+send_user "\n\nReport File generated - $report_file\n\n" 
+
+
+if {$interact_opt eq ""} {
+   exit
+}
+
+if {$interact_opt eq off} {
+  if {$reset_opt == 1} {
+       set fp [open $report_file r]
+       set file_data [read -nonewline $fp]
+       close $fp
+
+       set var ""
+       set crit_data [split $file_data "\n"]
+       foreach line $crit_data {
+          set line_arr [split $line ","]
+          set server_id [lindex $line_arr 0]
+          set server_status [lindex $line_arr end]
+     
+
+          if { $server_status == "Critical" } {
+            send_user -s "Executing CIMC reset for Server $server_id\n"
+            spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+            expect -re "(.*): $" {
+            send "$ucsm_pwd\r"
+	    expect -re ".?(.*)# $" {
+                send "\r"
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "scope server $server_id\r"
+                        expect -i $connection_id -re ".?(.*)# $" {
+                                send -i $connection_id "scope cimc\r"
+                                expect -i $connection_id -re ".?(.*)# $" {
+#                                        send -i $connection_id "reset\r"
+#                                        expect -i $connection_id -re ".?(.*)# $" {
+#                                                send -i $connection_id "commit-buffer\r"
+#                                                expect -i $connection_id -re ".?(.*)# $" {
+                                                close -i $connection_id
+                            }
+                          }
+                        }
+                      }
+                      append var $server_id ","
+                    }
+                  }
+                }
+                send_user "\nSuccessfully invoked CIMC reset for Server $server_id\n\n"
+                set cnt 0
+                while {$cnt<=10} {
+                   send_user "."
+                   sleep 2
+                   incr cnt
+                }
+                 
+             } 
+          }
+       
+     if {$var ne ""} {
+       puts "\nSuccessfully invoked CIMC reset for all Critical Servers: $var\n"
+     }
+} elseif {$reset_opt == 2} {
+       set fp [open $report_file r]
+       set file_data [read -nonewline $fp]
+       close $fp
+
+       set all_data [split $file_data "\n"]
+       foreach line $all_data {
+          set line_arr [split $line ","]
+          set server_id [lindex $line_arr 0]
+          set server_status [lindex $line_arr end]
+          
+          if {[regexp {^([0-9]+)$} $server_id]} {
+            send_user -s "Executing CIMC reset for Server $server_id\n"
+            spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+            expect -re "(.*): $" {
+            send "$ucsm_pwd\r"
+	    expect -re ".?(.*)# $" {
+                send "\r"
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "scope server $server_id\r"
+                        expect -i $connection_id -re ".?(.*)# $" {
+                                send -i $connection_id "scope cimc\r"
+                                expect -i $connection_id -re ".?(.*)# $" {
+#                                        send -i $connection_id "reset\r"
+#                                        expect -i $connection_id -re ".?(.*)# $" {
+#                                                send -i $connection_id "commit-buffer\r"
+#                                                expect -i $connection_id -re ".?(.*)# $" {
+                                                close -i $connection_id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                send_user "\nSuccessfully invoked CIMC reset for Server $server_id\n\n"
+                set cnt 0
+                while {$cnt<=10} {
+                   send_user "."
+                   sleep 2
+                   incr cnt
+              }
+            }
+       }
+       puts "\nSuccessfully invoked CIMC reset for all Servers\n"
+
+} elseif {$reset_opt == 3} {
+       set var ""
+
+       set fr [open $if_file r]
+       set report_data [read -nonewline $fr]
+       close $fr
+
+       set in_data [split $report_data "\n"]
+       foreach line $in_data {
+          set line_array [split $line ","]
+          set server_id [lindex $line_array 0]
+
+          if {[regexp {^([0-9]+)$} $server_id]} {
+            send_user -s "Executing CIMC reset for Server $server_id\n"
+            spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+            expect -re "(.*): $" {
+            send "$ucsm_pwd\r"
+	    expect -re ".?(.*)# $" {
+                send "\r"
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "scope server $server_id\r"
+                        expect -i $connection_id -re ".?(.*)# $" {
+                                send -i $connection_id "scope cimc\r"
+                                expect -i $connection_id -re ".?(.*)# $" {
+#                                        send -i $connection_id "reset\r"
+#                                        expect -i $connection_id -re ".?(.*)# $" {
+#                                                send -i $connection_id "commit-buffer\r"
+#                                                expect -i $connection_id -re ".?(.*)# $" {
+                                                close -i $connection_id
+                            }
+                          }
+                        }
+                      }
+                      append var $server_id ","
+                    }
+                  }
+                }
+                send_user "\nSuccessfully invoked CIMC reset for Server $server_id\n\n"
+                set cnt 0
+                while {$cnt<=10} {
+                   send_user "."
+                   sleep 2
+                   incr cnt
+                }
+             } 
+          }
+     if {$var ne ""} {
+       puts "\nSuccessfully invoked CIMC reset for Servers defined in Input CSV file: $var\n"
+     }
+}
+
+}
+
+if {$interact_opt eq on} {
+  puts "Select option to execute corresponding Operation:\n \
+        \t1. Reset Critical Servers from the generated report\n \
+        \t2. Reset All Servers from the generated report\n \
+        \t3. Reset All Servers from the Input CSV file.\n \
+        \t4. Reset All Comma Separated Server IDs\n \
+        \t5. Exit \ 
+       "
+  puts -nonewline "Option\[1\/2\/3\/4\/5\]:" 
+  flush stdout
+  gets stdin data 
+
+  while {$data != 1 && $data != 2 && $data != 3 && $data != 4 && $data != 5} {
+    puts "Incorrect Option !!\n"
+    puts "Select option to execute corresponding Operation:\n \
+        \t1. Reset Critical Servers from the generated report\n \
+        \t2. Reset All Servers from the generated report\n \
+        \t3. Reset All Servers from the Input CSV file.\n \
+        \t4. Reset All Comma Separated Server IDs\n \
+        \t5. Exit \ 
+       "
+    puts -nonewline "Option\[1\/2\/3\/4\/5\]:" 
+    flush stdout
+    gets stdin data 
+  } 
+
+  if {$data == 1} {
+       set fp [open $report_file r]
+       set file_data [read -nonewline $fp]
+       close $fp
+
+       set var ""
+       set crit_data [split $file_data "\n"]
+       foreach line $crit_data {
+          set line_arr [split $line ","]
+          set server_id [lindex $line_arr 0]
+          set server_status [lindex $line_arr end]
+     
+
+          if { $server_status == "Critical" } {
+            send_user -s "Executing CIMC reset for Server $server_id\n"
+            spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+            expect -re "(.*): $" {
+            send "$ucsm_pwd\r"
+	    expect -re ".?(.*)# $" {
+                send "\r"
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "scope server $server_id\r"
+                        expect -i $connection_id -re ".?(.*)# $" {
+                                send -i $connection_id "scope cimc\r"
+                                expect -i $connection_id -re ".?(.*)# $" {
+#                                        send -i $connection_id "reset\r"
+#                                        expect -i $connection_id -re ".?(.*)# $" {
+#                                                send -i $connection_id "commit-buffer\r"
+#                                                expect -i $connection_id -re ".?(.*)# $" {
+                                                close -i $connection_id
+                            }
+                          }
+                        }
+                      }
+                      append var $server_id ","
+                    }
+                  }
+                }
+                send_user "\nSuccessfully invoked CIMC reset for Server $server_id\n\n"
+                set cnt 0
+                while {$cnt<=10} {
+                   send_user "."
+                   sleep 2
+                   incr cnt
+             } 
+          }
+   }
+     if {$var ne ""} {
+       puts "\nSuccessfully invoked CIMC reset for all Critical Servers: $var\n"
+     }
+  } elseif {$data == 2} {
+       set fp [open $report_file r]
+       set file_data [read -nonewline $fp]
+       close $fp
+
+       set all_data [split $file_data "\n"]
+       foreach line $all_data {
+          set line_arr [split $line ","]
+          set server_id [lindex $line_arr 0]
+          set server_status [lindex $line_arr end]
+          
+          if {[regexp {^([0-9]+)$} $server_id]} {
+            send_user -s "Executing CIMC reset for Server $server_id\n"
+            spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+            expect -re "(.*): $" {
+            send "$ucsm_pwd\r"
+	    expect -re ".?(.*)# $" {
+                send "\r"
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "scope server $server_id\r"
+                        expect -i $connection_id -re ".?(.*)# $" {
+                                send -i $connection_id "scope cimc\r"
+                                expect -i $connection_id -re ".?(.*)# $" {
+#                                        send -i $connection_id "reset\r"
+#                                        expect -i $connection_id -re ".?(.*)# $" {
+#                                                send -i $connection_id "commit-buffer\r"
+#                                                expect -i $connection_id -re ".?(.*)# $" {
+                                                close -i $connection_id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                send_user "\nSuccessfully invoked CIMC reset for Server $server_id\n\n"
+                set cnt 0
+                while {$cnt<=10} {
+                   send_user "."
+                   sleep 2
+                   incr cnt
+              }
+            }
+    }
+       puts "\nSuccessfully invoked CIMC reset for all Servers\n"
+  } elseif {$data == 3} {
+       puts -nonewline "Enter Input CSV file:"
+       flush stdout
+       gets stdin u_if_file
+
+       while {![file isfile $u_if_file]} {
+                  puts "Incorrect Input File or File does not exist\n"
+                  puts -nonewline "Enter Input CSV file:"
+                  flush stdout
+                  gets stdin u_if_file
+       } 
+
+       if {[file isfile $u_if_file]} {
+                  set if_file $u_if_file
+       } 
+
+       set var ""
+
+       set fr [open $if_file r]
+       set report_data [read -nonewline $fr]
+       close $fr
+
+       set in_data [split $report_data "\n"]
+       foreach line $in_data {
+          set line_array [split $line ","]
+          set server_id [lindex $line_array 0]
+
+          if {[regexp {^([0-9]+)$} $server_id]} {
+            send_user -s "Executing CIMC reset for Server $server_id\n"
+            spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+            expect -re "(.*): $" {
+            send "$ucsm_pwd\r"
+	    expect -re ".?(.*)# $" {
+                send "\r"
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "scope server $server_id\r"
+                        expect -i $connection_id -re ".?(.*)# $" {
+                                send -i $connection_id "scope cimc\r"
+                                expect -i $connection_id -re ".?(.*)# $" {
+#                                        send -i $connection_id "reset\r"
+#                                        expect -i $connection_id -re ".?(.*)# $" {
+#                                                send -i $connection_id "commit-buffer\r"
+#                                                expect -i $connection_id -re ".?(.*)# $" {
+                                                close -i $connection_id
+                            }
+                          }
+                        }
+                      }
+                      append var $server_id ","
+                    }
+                  }
+                }
+                send_user "\nSuccessfully invoked CIMC reset for Server $server_id\n\n"
+                set cnt 0
+                while {$cnt<=10} {
+                   send_user "."
+                   sleep 2
+                   incr cnt
+                }
+             } 
+          }
+     if {$var ne ""} {
+       puts "\nSuccessfully invoked CIMC reset for Servers defined in Input CSV file: $var\n"
+     }
+  } elseif {$data == 4} {
+       puts -nonewline "Enter Comma Separated Server IDs:"
+       flush stdout
+       gets stdin val
+       set id_arr [split $val ","]
+
+       set var ""
+       foreach server_id $id_arr {
+          if {[regexp {^([0-9]+)$} $server_id]} {
+            send_user -s "Executing CIMC reset for Server $server_id\n"
+            spawn ssh -o "StrictHostKeyChecking no" "$ucsm_user\@$ucsm_ip"
+            expect -re "(.*): $" {
+            send "$ucsm_pwd\r"
+	    expect -re ".?(.*)# $" {
+                send "\r"
+                expect -re ".?(.*)# $" {
+                        set connection_id $spawn_id
+                        send -i $connection_id "scope server $server_id\r"
+                        expect -i $connection_id -re ".?(.*)# $" {
+                                send -i $connection_id "scope cimc\r"
+                                expect -i $connection_id -re ".?(.*)# $" {
+#                                        send -i $connection_id "reset\r"
+#                                        expect -i $connection_id -re ".?(.*)# $" {
+#                                                send -i $connection_id "commit-buffer\r"
+#                                                expect -i $connection_id -re ".?(.*)# $" {
+                                                close -i $connection_id
+                            }
+                          }
+                        }
+                      }
+                      append var $server_id ","
+                    }
+                  }
+                }
+                send_user "\nSuccessfully invoked CIMC reset for Server $server_id\n\n"
+                set cnt 0
+                while {$cnt<=10} {
+                   send_user "."
+                   sleep 2
+                   incr cnt
+                }
+             } 
+          }
+     if {$var ne ""} {
+       puts "\nSuccessfully invoked CIMC reset for Servers defined on Console: $var\n"
+     }
+  } elseif {$data == 5} {
+       puts "\nTool exited\n"
+       exit     
+  } 
+}

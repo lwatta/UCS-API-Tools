@@ -1,0 +1,108 @@
+# C220M4-2Tor-HAProxy.yml
+# This yaml config is for HAProxy on a C220 where only 2Tors are used.
+#       HAProxy only uses physical nics and only two are required so NO vnics are created
+#       Also the VLAN is NOT set. The upstream switch is set to
+#               - access port
+#               - native vlan 65
+#       We only need to set the port to access. There is no need to add vlan 65 to the nic.
+
+#Add accounts
+# Things need to think about -
+#	need to set the CIMC hostname
+# Bios settings
+---
+  BiosVfIntelVTForDirectedIO:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Intel-VT-for-directed-IO"
+    VpIntelVTDCoherencySupport:  "enabled"
+    VpIntelVTForDirectedIO: "enabled"
+  BiosVfDirectCacheAccess:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Direct-Cache-Access"
+    VpDirectCacheAccess: "enabled"
+  BiosVfCPUPowerManagement:
+    Dn: "sys/rack-unit-1/bios/bios-settings/CPU-PowerManagement"
+    VpCPUPowerManagement: "custom"
+  BiosVfProcessorC6Report:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Processor-C6-Report"
+    VpProcessorC6Report: "disabled"
+  BiosVfProcessorC1E:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Processor-C1E"
+    VpProcessorC1E: "disabled"
+  BiosVfTPMSupport:
+    Dn: "sys/rack-unit-1/bios/bios-settings/TPM-Support"
+    VpTPMSupport: "enabled"
+  BiosVfLOMPortOptionROM:
+    Dn: "sys/rack-unit-1/bios/bios-settings/LOMPort-OptionROM"
+    VpLOMPortsAllState: "Disabled"
+  BiosVfPCIOptionROMs:
+    Dn: "sys/rack-unit-1/bios/bios-settings/PCI-OptionROMs"
+    VpPCIOptionROMs: "Enabled"
+  BiosVfPCISlotOptionROMEnable:
+    Dn: "sys/rack-unit-1/bios/bios-settings/PCI-Slot-OptionROM-Enable"
+    VpSlot1State: "Disabled"
+    VpSlot2State: "Disabled"
+    VpSlotMLOMState: "Enabled"
+    VpSlotHBAState: "Enabled"
+  BiosVfSataModeSelect:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Pch-Sata-Mode"
+    VpSataModeSelect: "Disabled"
+# Nic settings
+...
+---
+  AdaptorHostEthif:
+    Dn: "sys/rack-unit-1/adaptor-3/host-eth-eth0"
+    PxeBoot: "enabled"
+  AdaptorEthGenProfile:
+    Dn: "sys/rack-unit-1/adaptor-3/host-eth-eth0/general"
+    VlanMode: "ACCESS"
+    Vlan: "NONE"
+...
+---
+  AdaptorEthGenProfile:
+    Dn: "sys/rack-unit-1/adaptor-3/host-eth-eth1/general"
+    VlanMode: "ACCESS"
+    Vlan: "NONE"
+# Boot Configuration
+  LsbootPxe:
+    Dn: "sys/rack-unit-1/boot-precision/pxe-pxe"
+    Name: "pxe"
+    Type: "PXE"
+    State: "Enabled"
+    Order: "1"
+  LsbootHdd:
+    Dn: "sys/rack-unit-1/boot-precision/hdd-localhd"
+    Name: "localhd"
+    Type: "LOCALHDD"
+    State: "Enabled"
+    Order: "2"
+# Syslog should always be the infra-002 node.
+  CommSyslogClient:
+    Dn: "sys/svc-ext/syslog/client-primary"
+    Hostname: "csx-a-logs-001"
+    AdminState: "enabled"
+# NTP Change this for NTP servers as needed
+  CommNtpProvider:
+    Dn: "sys/svc-ext/ntp-svc"
+    NtpServer1: "1.ntp.esl.cisco.com"
+    NtpServer2: "2.ntp.esl.cisco.com"
+    NtpEnable: "yes"
+# Power restore
+  BiosVfResumeOnACPowerLoss:
+    Dn: "sys/rack-unit-1/board/Resume-on-AC-power-loss"
+    VpResumeOnACPowerLoss: "reset"
+# DIMM black list
+  MemoryArray:
+    Dn: "sys/rack-unit-1/board/memarray-1"
+    DimmBlackList: "enable"
+# Enable SNMP
+  CommSnmp:
+    Dn: "sys/svc-ext/snmp-svc"
+    AdminState: "enabled"
+# Add DNS Assume Cisco sites and access to esl
+  MgmtIF:
+    Dn: "sys/rack-unit-1/mgmt/if-1"
+    DnsPreferred: "173.37.137.85"
+    DnsAlternate: "64.104.76.247"
+# Reboot this bad boy
+  ComputeRackUnit:
+    Dn: "sys/rack-unit-1"
+    AdminPower: "cycle-immediate"

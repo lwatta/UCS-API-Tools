@@ -1,0 +1,3 @@
+server_id,server_model,CIMC_version,service_profile,mem_free,uptime,status
+show server inventory | grep UCSC-C | tr -s ' ' , | cut -d ',NA,                     ^,NA,NA,Not reachable
+1,UCSC-C220-M3S,1.5(4),svl-2-cc-mgmt-001,59728,2 days 4 hrs 7 mins 52 secs,OK

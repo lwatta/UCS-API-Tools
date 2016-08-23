@@ -1,0 +1,36 @@
+# Playbook to do the following
+#	- remove HWADDR from /etc/syconfig/network-scripts/ifcfg-eth*
+#		Removing the host from the FI will change the MAC. 
+#		We will add it back in the post-work
+#	- Since this is ucs we only need to modify eth0 for connectivity
+---
+- name: FI-less pre-decom script
+#  hosts: "{{ target }}"
+  hosts: all
+  gather_facts: no
+  vars:
+    ucs_password: "notadmin"
+    ucs_system: "localhost"
+ 
+  tasks:
+    - name: Remove HWADDR from eth0
+      lineinfile: dest=/etc/sysconfig/network-scripts/ifcfg-eth0 state=absent regexp="^HWADDR" backup=yes
+      tags:
+        - noshut
+
+    - name: Remove HWADDR from eth1
+      lineinfile: dest=/etc/sysconfig/network-scripts/ifcfg-eth1 state=absent regexp="^HWADDR" backup=yes
+      tags:
+        - noshut
+
+    - name: Change root password
+      user: name=root password=$6$rounds=656000$YLt5xUwTV6YWLPLW$209ONeeqGXjibNlG0a.tnPCvROWAVtlp9aG0713nt.1ZOn78nClleNhKrdOQmHGVJXC202ETeRoiAsRRo48kH/
+      tags:
+        - noshut
+
+    - wait_for: delay 10
+       
+    - name: Shutdown hosts
+      shell: shutdown -h now
+      tags:
+        - shut

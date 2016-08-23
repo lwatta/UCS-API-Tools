@@ -1,0 +1,21 @@
+server_id,server_model,CIMC_version,service_profile,mem_free,uptime,status
+show server inventory | grep UCSC-C | tr -s ' ' , | cut -d ',NA,                     ^,NA,NA,Not reachable
+1,UCSC-C220-M3S,1.5(4),svl-2-cc-mgmt-001,59756,2 days 4 hrs 13 mins 42 secs,OK
+2,UCSC-C220-M3S,NA,,NA,NA,Not reachable
+3,UCSC-C220-M3S,1.5(4),svl-2-cc-mgmt-003,34296,141 days 3 hrs 50 mins 20 secs,OK
+4,UCSC-C220-M3S,2.0(6d),svl-1-cc-aio-001,59920,43 days 6 hrs 24 mins 13 secs,OK
+5,UCSC-C220-M3S,2.0(6d),svl-1-cc-nova1-001,59672,43 days 6 hrs 24 mins 19 secs,OK
+6,UCSC-C220-M3S,1.5(4),svl-3-cc-build-001,26296,141 days 3 hrs 53 mins 31 secs,OK
+7,UCSC-C220-M3S,1.5(4),svl-2-cc-build-001,31916,141 days 4 hrs 15 mins 10 secs,OK
+8,UCSC-C220-M3S,2.0(6d),svl-1-cc-nova1-002,59980,43 days 6 hrs 24 mins 41 secs,OK
+9,UCSC-C220-M3S,2.0(6d),svl-2-cc-nova2-001,58812,43 days 10 hrs 37 secs,OK
+10,UCSC-C220-M3S,1.5(4),svl-2-cc-nova2-002,29544,141 days 4 hrs 13 mins 55 secs,OK
+11,UCSC-C220-M3S,NA,svl-2-cc-nova2-003,NA,NA,Not reachable
+12,UCSC-C220-M3S,1.5(4),svl-2-cc-mgmt-002,60120,2 days 4 hrs 16 mins 57 secs,OK
+13,UCSC-C220-M3S,1.5(4),svl-3-cc-nova2-002,25092,141 days 4 hrs 22 mins 10 secs,OK
+14,UCSC-C220-M3S,1.5(4),svl-3-cc-mgmt-001,20072,141 days 4 hrs 21 mins 52 secs,OK
+15,UCSC-C220-M3S,1.5(4),svl-3-cc-mgmt-002,18396,141 days 4 hrs 16 mins 18 secs,Critical
+16,UCSC-C220-M3S,1.5(4),svl-3-cc-mgmt-003,25348,141 days 4 hrs 16 mins 42 secs,OK
+17,UCSC-C220-M3S,1.5(4),svl-3-cc-net-002,44516,141 days 3 hrs 55 mins 57 secs,OK
+18,UCSC-C220-M3S,1.5(4),svl1-csm-a-infra-001,36396,141 days 3 hrs 54 mins 14 secs,OK
+svl-cc-ucs01-B# ,,NA,                     ^,NA,NA,Not reachable

@@ -1,0 +1,3 @@
+---
+- name: lwatta restart redhat networking
+  service: name=network state=restarted 

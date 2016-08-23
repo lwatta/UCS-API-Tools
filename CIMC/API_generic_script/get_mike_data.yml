@@ -1,0 +1,19 @@
+#IMPORTANT: the space after the key and before the value is important!!!
+#lack of that space will cause parse failure
+#
+#TODO: You can decrypt the pod5 yaml, copy it and only change the password for first 8 local users.
+#!!! remember to encrypt the file using ansible vault secret in whiteboard before checkin!!!
+#Note: the ansible vault secret for encrypt ucs yaml file is in whiteboard
+#
+---
+  ComputeRackUnit:
+    Dn: "sys/rack-unit-1"
+    Model: ""
+  AdaptorExtEthIf:
+    Dn: "sys/rack-unit-1/adaptor-7/ext-eth-0"
+    Mac: ""
+...
+---
+  AdaptorExtEthIf:
+    Dn: "sys/rack-unit-1/adaptor-3/ext-eth-0"
+    Mac: ""

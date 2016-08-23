@@ -1,0 +1,12 @@
+---
+BiosVProfile: 
+  BiosVfUSBFrontPanelAccessLock: 
+    Dn: org-root/replace-me/USB-Front-Panel-Access-Lock
+    VpUSBFrontPanelLock: "enabled"
+  BiosVfUSBPortConfiguration:
+    Dn: org-root/replace-me/USB-port-configuration
+    VpUSBPortFront: "disabled"
+    VpUSBPortRear: "disabled"
+  BiosVfUSBBootConfig:
+    Dn: org-root/replace-me/USB-Boot-Config
+    VpMakeDeviceNonBootable: "enabled"

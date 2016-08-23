@@ -1,0 +1,9 @@
+# get serial number of server
+# 
+#
+#
+---
+# Serial number of server  
+  ComputeRackUnit:
+    Dn: "sys/rack-unit-1"
+    Serial: ""

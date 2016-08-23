@@ -1,0 +1,13 @@
+# test.yml
+# Testing to see if we can add accounts via yaml as well.
+
+# Things need to think about -
+#	need to set the CIMC hostname
+# Add accounts
+---
+  AaaUser:
+    Dn: "sys/user-ext/user-2"
+    Pwd:  "password"
+    Name: "ccs-build-gen"
+    Priv: "admin"
+    AccountStatus: "active"

@@ -1,0 +1,4 @@
+---
+ComputeMemoryConfigPolicy: 
+    Dn: org-root/memory-config-default
+    BlackListing: "enabled"

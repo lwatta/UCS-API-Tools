@@ -1,0 +1,46 @@
+# Playbook to do the following
+#	-  Setup bonding for mgmt
+#		Will require removing eth1 from ovs
+#		Creating bond info /etc/sysconfig/network-scripts
+#		Modifying /etc/sysconfig/network-scripts/ifcfg-eth0 and ifcfg-eth1
+#		There are templates and ansible roles available to do this.
+#	- Setup bonding for OVS
+#		Creating /etc/sysconfig/network-scripts/ifcfg-eth2 and eth3
+#		Creating OVS-bond
+#	- Since this is ucs we only need to modify eth0 for connectivity
+---
+- name: FI-less post-decom script
+  hosts: "{{ target }}"
+#  hosts: all
+#  connection: local
+  gather_facts: yes
+  vars:
+    - nameservers: 171.70.168.183
+
+# it seems the bonding actually happens with the puppet run not provisioning so I will 
+#	need to reuse and create some new playbooks to do this. 
+  roles: 
+    - role: fi_removal
+
+  tasks:
+ 
+# ovs_bond.yml is part of provisioning its in roles/interfaces/tasks/ovs_bond.yml
+#	creates the ifcfg-eth2 and ifcfg-eth3 interfaces in /etc/sysconfig/network-scripts
+#	And then adds the bond to ovs under br-ex
+#	It makes use of templates in roles/interfaces/templates
+
+# The task below will only create the ifcfg-interfaces
+#    - name: Setup the interfaces for OVS bond
+#      include: ../roles/interfaces/tasks/ovs_bond.yml
+       
+# This task will remove eth1 from ovs
+    - name: Remove eth1 from br-ex
+      shell: ovs-vsctl del-port br-ex eth1
+
+# This task will actually add the interface to br-ex and the bond
+    - name: Add eth2 and eth3 to OVS as a bond
+      shell: ovs-vsctl add-bond br-ex bond1 eth2 eth3
+
+# Make eth3 the active link the bond. 
+    - name: Make eth3 active link
+      shell: ovs-appctl bond/set-active-slave bond1 eth3

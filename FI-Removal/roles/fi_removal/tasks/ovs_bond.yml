@@ -1,0 +1,13 @@
+---
+
+- name: ensure redhat interface file
+  template: src=ifcfg-generic_noip.j2 dest=/etc/sysconfig/network-scripts/ifcfg-{{ item }}
+  with_items:
+    - eth2
+    - eth3
+
+- name: ifup eth2 and eth3 since notify sucks
+  command: ifup {{ item }}
+  with_items:
+    - eth2
+    - eth3

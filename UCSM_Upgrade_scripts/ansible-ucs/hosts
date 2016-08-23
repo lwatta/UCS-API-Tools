@@ -1,0 +1,17 @@
+[localhost]
+localhost ansible_connection=local
+localhost ansible_python_interpreter=/usr/local/Cellar/python/2.7.8_1/bin/python
+
+
+[ucs-sim]
+svl10-csm-a-infra-001
+172.16.212.177
+172.16.212.186
+svl-cc-ucs01
+svl-pod2-ucs02
+svl-pod2-ucs03
+svl-pod2-ucs01
+lhr03-csxpod1-ucs02
+lhr03-csxpod1-ucs03
+lhr03-csxpod1-ucs01
+svl-csl-eng-ucs01

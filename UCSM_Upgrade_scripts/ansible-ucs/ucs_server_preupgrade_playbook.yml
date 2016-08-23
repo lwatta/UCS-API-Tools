@@ -1,0 +1,29 @@
+---
+- name: Create nova node UCS Service Profile Template
+  hosts: "{{ target }}"
+  connection: local
+  gather_facts: no
+  vars:
+    ucs_password: "notadmin"
+
+# should run local since it defined as local
+  tasks:
+  - name: output message
+    debug: msg="{{ ucs_password }}"
+
+  - name: Modify the bios policy to turn off USB
+    shell: /Users/lwatta/Code/UCS-API-Tools/upgrades/UCSM_bios_policy_modify.py -b /Users/lwatta/Code/UCS-API-Tools/upgrades/bios.yml -i "{{ inventory_hostname }}"   -p  "{{ ucs_password }}" -n SRIOV -c True 
+
+  - name: Modify additional UCSM parameters like dimm-blacklisting for Upgrade
+    shell: /Users/lwatta/Code/UCS-API-Tools/upgrades/UCSM_generic_yaml_update.py -b /Users/lwatta/Code/UCS-API-Tools/upgrades/ucs.yml -i "{{ inventory_hostname }}"  -p "{{ ucs_password }}" -c True
+
+  - name: Create UCS firmware policy
+    ucs_firmware_policy:
+       ucsm_ip: "{{ inventory_hostname }}"
+       ucsm_user: "admin" 
+       ucsm_pw: "{{ ucs_password }}"
+       state: "present"
+       policy_name: "Host-FW-2.2.5a"
+       policy_desc: "Firmware_for_225a"
+       blade_bundle_version: "2.2(5a)B"
+       rack_bundle_version: "2.2(5a)C"

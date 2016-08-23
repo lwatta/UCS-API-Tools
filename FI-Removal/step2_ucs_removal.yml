@@ -1,0 +1,43 @@
+---
+- name: UCS Infrastructure Pre-upgade playbook
+  hosts: "{{ target }}"
+  connection: local
+  gather_facts: no
+  vars:
+    ucs_password: "notadmin"
+
+# should run local since it defined as local
+  tasks:
+  - name: Make backup directory in /var/tmp
+    file: path=/var/tmp/{{ target }} state=directory
+
+  - name: Backup UCSM to Full backup
+    shell: ../UCSM_Upgrade_scripts/scripts/backupUcsManager.py -i "{{ inventory_hostname }}" -u admin -p "{{ ucs_password }}"  -t full-state -f /var/tmp/"{{ target }}"/full-state.xml
+    tags:
+      - backup
+
+  - name: Backup UCSM to config-logical
+    shell: ../UCSM_Upgrade_scripts/scripts/backupUcsManager.py -i "{{ inventory_hostname }}" -u admin -p "{{ ucs_password }}"  -t config-logical -f /var/tmp/"{{ target }}"/config-logical-hostname.xml
+    tags:
+      - backup
+
+  - name: Generate Tech-support file before upgrade. Can take a long time be patient
+    shell: ../UCSM_Upgrade_scripts/scripts/downloadTechSupportFile.py -i "{{ inventory_hostname }}" -u admin -p "{{ ucs_password }}"  -f /var/tmp/"{{ target }}"/tech_support.tar
+    tags:
+      - backup
+
+  - name: Time to disassociate the servers from the SP. Will do all SPs connected to the FI
+    connection: local
+    shell: ./UCSM_dis_decom.py -i "{{ inventory_hostname }}" -p "{{ ucs_password }}"
+    tags:
+      - decom
+
+  - name: Turn off Smart Call Home
+    shell: ../UCSM_Upgrade_scripts/scripts/UCSM_callhome_on-off.py -u "{{ inventory_hostname }}" -p "{{ ucs_password }}"  -a off
+    tags:
+      - decom
+
+  - name: Make sure netboot is false for all nodes
+    shell: for i in $(cobbler system list); do echo $i; cobbler system edit --netboot-enabled=False --name=$i; done
+    tags:
+      - decom

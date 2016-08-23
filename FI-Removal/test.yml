@@ -1,0 +1,27 @@
+# Simple playbook to parallelize CIMC configs
+# If we do hosts one by one it takes forever. Takes about 5-10 minutes per host
+# We can safely run this in parallel
+---
+- name: Run CIMC script in para
+#  hosts: "{{ target }}"
+  hosts: all
+  connection: local
+  vars:
+    - ucs_password: "notadmin"
+
+  tasks:
+ 
+# Script
+
+    - name: Update CIMC HAPROXY settings
+      shell: ./CIMC_generic_yaml_update.py -i "{{ inventory_hostname }}" -u admin -p "{{ ucs_password }}"  -c True -b ./C220M3-HAPROXYr.yml 
+      tags: cimc
+      when: "'csx-a-haproxy' in inventory_hostname "
+#	when: "'network_controller' in group_names"
+
+
+    - name: Update CIMC Nova/Net nod settings
+      shell: ./CIMC_generic_yaml_update.py -i "{{ inventory_hostname }}" -u admin -p "{{ ucs_password }}"  -c True -b ./C220M3-2Tor.yml 
+      tags: cimc
+      when: "'csx-a-nova' in inventory_hostname "
+

@@ -1,0 +1,4 @@
+---
+  BiosVfSataModeSelect:
+    Dn: "sys/rack-unit-1/bios/bios-settings/Pch-Sata-Mode"
+    VpSataModeSelect: "AHCI"

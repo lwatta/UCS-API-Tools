@@ -1,0 +1,10 @@
+# get right optionrom data
+# Add accounts
+# Things need to think about -
+#	need to set the CIMC hostname
+---
+# Bios settings
+  BiosVfUSBPortsConfig:
+    Dn: "sys/rack-unit-1/bios/bios-settings/USB-Ports-Config"
+    VpUsbPortFront: "enabled"
+    VpUsbPortRear: "enabled"

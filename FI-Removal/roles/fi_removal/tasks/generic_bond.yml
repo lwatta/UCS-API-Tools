@@ -1,0 +1,16 @@
+---
+
+- name: ensure redhat eth interface file added to bond
+  template: src=ifcfg-generic_slave.j2 dest=/etc/sysconfig/network-scripts/ifcfg-{{ item }}
+  with_items: 
+      - eth0
+      - eth1
+  tags: networking
+
+- name: Ensure redhat bond interface file
+  template: src=ifcfg-bond0.j2 dest=/etc/sysconfig/network-scripts/ifcfg-{{ item }}
+  with_items: 
+      - bond0
+
+- name: Restart networking since notify sucks
+  command: systemctl restart network.service

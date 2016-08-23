@@ -1,0 +1,36 @@
+---
+- name: ensure bonding module is present in modules
+  shell: modprobe --first-time bonding
+  tags: networking
+
+#- name: ensure redhat network file gateway
+#  lineinfile: dest=/etc/sysconfig/network regexp=^GATEWAY= line="GATEWAY={{ ansible_default_ipv4.gateway }}"
+#  notify: restart redhat networking
+#  tags: networking
+
+#- name: ensure redhat network file hostname
+#  lineinfile: dest=/etc/sysconfig/network regexp=^HOSTNAME= line="HOSTNAME={{ hostname }}"
+#  notify: restart redhat networking
+#  tags: networking
+
+
+- include: generic_bond.yml
+
+#  service cloud, tenant cloud, BOM 3.X, BOM 4.X
+#
+#  BOM 3.X and BOM 4.X
+#  service cloud -> [aio, nova] -> Linux Bond0 & OVS Bond1
+#                -> [infra, ceph] -> Linux Bond0 & Linux Bond1
+#
+#  BOM 3.X
+#  tenant cloud -> [net, nova] -> Eth0 & OVS Eth1
+#               -> [proxy]     -> Eth0
+#               -> [ceph]      -> Linux Bond0 & Linux Bond1
+#
+#  BOM 4.X
+#  tenant cloud -> [net, nova] -> Linux Bond0 & OVS Bond1
+#               -> [proxy]     -> Linux Bond0
+#               -> [ceph]      -> Linux Bond0 & Linux Bond1
+
+- include: ovs_bond.yml
+
